@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WB Print Manager - Система управления печатью</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #007bff;
+            text-align: center;
+        }
+        
+        .status-card h3 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .status-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .control-panel h3 {
+            color: #495057;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        
+        .queue-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .queue-section h3 {
+            color: #495057;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .task-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .task-item h4 {
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .task-item p {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-pending { background: #ffc107; }
+        .status-printing { background: #007bff; }
+        .status-completed { background: #28a745; }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .status-grid, .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖨️ WB Print Manager</h1>
+            <p>Система управления печатью заказов Wildberries</p>
+        </div>
+        
+        <div class="content">
+            <!-- Статус системы -->
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3>Принтеры</h3>
+                    <div class="value" id="printers-count">0</div>
+                </div>
+                <div class="status-card">
+                    <h3>Задачи в очереди</h3>
+                    <div class="value" id="queue-count">0</div>
+                </div>
+                <div class="status-card">
+                    <h3>Процессор</h3>
+                    <div class="value" id="processor-status">Остановлен</div>
+                </div>
+            </div>
+            
+            <!-- Уведомления -->
+            <div id="notifications"></div>
+            
+            <!-- Панели управления -->
+            <div class="controls-grid">
+                <!-- Управление принтерами -->
+                <div class="control-panel">
+                    <h3>🖨️ Управление принтерами</h3>
+                    
+                    <div class="form-group">
+                        <label for="printer-id">ID принтера:</label>
+                        <input type="text" id="printer-id" placeholder="printer_1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="printer-name">Название:</label>
+                        <input type="text" id="printer-name" placeholder="Принтер склада А">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="printer-type">Тип:</label>
+                        <select id="printer-type">
+                            <option value="thermal">Термопринтер</option>
+                            <option value="laser">Лазерный</option>
+                            <option value="inkjet">Струйный</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="printer-location">Расположение:</label>
+                        <input type="text" id="printer-location" placeholder="Склад А">
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="addPrinter()">➕ Добавить принтер</button>
+                    <button class="btn btn-danger" onclick="removePrinter()">➖ Удалить принтер</button>
+                </div>
+                
+                <!-- Системные принтеры -->
+                <div class="control-panel">
+                    <h3>💻 Системные принтеры</h3>
+                    
+                    <button class="btn" onclick="loadSystemPrinters()">🔄 Обновить список</button>
+                    <button class="btn" onclick="loadWorkgroupPrinters()">🏷️ Рабочая группа</button>
+                    <button class="btn btn-success" id="add-selected-to-group" style="display:none; margin-top:10px;" onclick="addSelectedToWorkgroup()">➕ Добавить выбранные в группу</button>
+                    <div id="system-printers-list" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                        <p>Нажмите "Обновить список" для загрузки системных принтеров</p>
+                    </div>
+                </div>
+                
+                <!-- Управление печатью -->
+                <div class="control-panel">
+                    <h3>🔄 Управление печатью</h3>
+                    
+                    <button class="btn btn-success" onclick="addOrders()">📋 Добавить заказы</button>
+                    <button class="btn btn-warning" onclick="startProcessor()">▶️ Запустить процессор</button>
+                    <button class="btn btn-danger" onclick="stopProcessor()">⏹️ Остановить процессор</button>
+                    <button class="btn" onclick="generateExcel()">📊 Создать Excel отчет</button>
+                </div>
+            </div>
+            
+            <!-- Очередь печати и выполненные задачи -->
+            <div class="queue-section">
+                <h3>📋 Очередь печати</h3>
+                <div id="queue-list">
+                    <p>Загрузка очереди...</p>
+                </div>
+            </div>
+            
+            <!-- Выполненные задачи -->
+            <div class="queue-section">
+                <h3>✅ Выполненные задачи</h3>
+                <div id="completed-tasks-list">
+                    <p>Загрузка выполненных задач...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // WebSocket подключение для real-time обновлений
+        let ws = null;
+        
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://${window.location.host}/ws`);
+            
+            ws.onmessage = function(event) {
+                const status = JSON.parse(event.data);
+                updateStatus(status);
+            };
+            
+            ws.onclose = function() {
+                setTimeout(connectWebSocket, 1000);
+            };
+        }
+        
+        function updateStatus(status) {
+            document.getElementById('printers-count').textContent = status.printers_count;
+            document.getElementById('queue-count').textContent = status.queue_count;
+            document.getElementById('processor-status').textContent = 
+                status.processor_running ? 'Работает' : 'Остановлен';
+        }
+        
+        function showNotification(message, type = 'success') {
+            const notifications = document.getElementById('notifications');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            notifications.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+        
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`/api/${endpoint}`, options);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Ошибка запроса');
+                }
+                
+                return result;
+            } catch (error) {
+                showNotification(error.message, 'error');
+                throw error;
+            }
+        }
+        
+        async function addPrinter() {
+            const printerData = {
+                id: document.getElementById('printer-id').value,
+                name: document.getElementById('printer-name').value,
+                type: document.getElementById('printer-type').value,
+                location: document.getElementById('printer-location').value
+            };
+            
+            if (!printerData.id) {
+                showNotification('ID принтера обязателен', 'error');
+                return;
+            }
+            
+            try {
+                const result = await apiCall('printers', 'POST', printerData);
+                showNotification(result.message);
+                loadPrinters();
+            } catch (error) {
+                console.error('Ошибка добавления принтера:', error);
+            }
+        }
+        
+        async function removePrinter() {
+            const printerId = document.getElementById('printer-id').value;
+            if (!printerId) {
+                showNotification('Введите ID принтера для удаления', 'error');
+                return;
+            }
+            
+            try {
+                const result = await apiCall(`printers/${printerId}`, 'DELETE');
+                showNotification(result.message);
+                loadPrinters();
+            } catch (error) {
+                console.error('Ошибка удаления принтера:', error);
+            }
+        }
+        
+        async function addOrders() {
+            try {
+                const result = await apiCall('orders/add', 'POST');
+                showNotification(result.message);
+                loadQueue();
+            } catch (error) {
+                console.error('Ошибка добавления заказов:', error);
+            }
+        }
+        
+        async function startProcessor() {
+            try {
+                const result = await apiCall('processor/start', 'POST');
+                showNotification(result.message);
+            } catch (error) {
+                console.error('Ошибка запуска процессора:', error);
+            }
+        }
+        
+        async function stopProcessor() {
+            try {
+                const result = await apiCall('processor/stop', 'POST');
+                showNotification(result.message);
+            } catch (error) {
+                console.error('Ошибка остановки процессора:', error);
+            }
+        }
+        
+        async function generateExcel() {
+            try {
+                const result = await apiCall('excel/generate', 'GET');
+                showNotification(result.message);
+            } catch (error) {
+                console.error('Ошибка создания Excel отчета:', error);
+            }
+        }
+        
+        async function loadQueue() {
+            try {
+                const result = await apiCall('queue', 'GET');
+                console.log('Загруженные задачи:', result.tasks);
+                const queueList = document.getElementById('queue-list');
+                
+                if (result.tasks.length === 0) {
+                    queueList.innerHTML = '<p>Очередь пуста</p>';
+                    return;
+                }
+                
+                queueList.innerHTML = result.tasks.map(task => `
+                    <div class="task-item">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <h4>
+                                    <span class="status-indicator status-${task.status}"></span>
+                                    Задача ${task.id}
+                                </h4>
+                                <p>Артикул: ${task.article}</p>
+                                <p>Статус: ${task.status}</p>
+                                <p>Приоритет: ${task.priority}</p>
+                                ${task.assigned_printer ? `<p>Принтер: ${task.assigned_printer}</p>` : ''}
+                            </div>
+                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8em;" onclick="removeTask('${task.id}')">🗑️ Удалить</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки очереди:', error);
+            }
+        }
+        
+        async function loadSystemPrinters() {
+            try {
+                const result = await apiCall('system/printers', 'GET');
+                const printersList = document.getElementById('system-printers-list');
+                const addBtn = document.getElementById('add-selected-to-group');
+                if (result.printers.length === 0) {
+                    printersList.innerHTML = '<p>Системные принтеры не найдены</p>';
+                    addBtn.style.display = 'none';
+                    return;
+                }
+                addBtn.style.display = 'inline-block';
+                printersList.innerHTML = result.printers.map(printer => `
+                    <div class="task-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                        <input type="checkbox" class="sys-printer-checkbox" value="${printer.name}" style="margin-right: 10px;">
+                        <div style="flex:1;">
+                            <h4 style="margin-bottom: 5px;">${printer.name}</h4>
+                            <p style="font-size: 0.8em; margin: 2px 0;">Тип: ${printer.type} | Статус: ${printer.status}</p>
+                            <p style="font-size: 0.8em; margin: 2px 0;">
+                                ${printer.location ? `Расположение: ${printer.location} | ` : ''}
+                                ${printer.port ? `Порт: ${printer.port}` : ''}
+                            </p>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showNotification('Ошибка загрузки системных принтеров', 'error');
+            }
+        }
+        
+        async function addSelectedToWorkgroup() {
+            const checkboxes = document.querySelectorAll('.sys-printer-checkbox:checked');
+            const names = Array.from(checkboxes).map(cb => cb.value);
+            if (names.length === 0) {
+                showNotification('Выберите хотя бы один принтер', 'error');
+                return;
+            }
+            try {
+                const result = await apiCall('workgroup/printers/add-multiple', 'POST', { names, workgroup: 'wb_print_group' });
+                showNotification('Принтеры добавлены в рабочую группу');
+                loadWorkgroupPrinters();
+            } catch (error) {
+                showNotification('Ошибка добавления в группу', 'error');
+            }
+        }
+
+        async function loadWorkgroupPrinters() {
+            const addBtn = document.getElementById('add-selected-to-group');
+            addBtn.style.display = 'none';
+            try {
+                const result = await apiCall('workgroup/printers', 'GET');
+                const printersList = document.getElementById('system-printers-list');
+                if (result.printers.length === 0) {
+                    printersList.innerHTML = '<p>Рабочая группа пуста</p>';
+                    return;
+                }
+                printersList.innerHTML = result.printers.map(printer => `
+                    <div class="task-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                        <div style="flex:1;">
+                            <h4 style="margin-bottom: 5px;">${printer.name}</h4>
+                            <p style="font-size: 0.8em; margin: 2px 0;">Тип: ${printer.type} | Статус: ${printer.status}</p>
+                        </div>
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8em;" onclick="removeFromWorkgroup('${printer.name}')">➖ Из группы</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showNotification('Ошибка загрузки принтеров группы', 'error');
+            }
+        }
+        
+        async function removeFromWorkgroup(printerName) {
+            try {
+                const result = await apiCall(`workgroup/printers/${encodeURIComponent(printerName)}`, 'DELETE');
+                showNotification(result.message);
+                loadWorkgroupPrinters();
+            } catch (error) {
+                console.error('Ошибка удаления из группы:', error);
+            }
+        }
+        
+        async function removeTask(taskId) {
+            console.log('Удаление задачи:', taskId);
+            
+            if (!confirm('Вы уверены, что хотите удалить эту задачу из очереди?')) {
+                return;
+            }
+            
+            try {
+                console.log('Отправка запроса на удаление...');
+                const result = await apiCall(`queue/task/${taskId}`, 'DELETE');
+                console.log('Результат удаления:', result);
+                showNotification(result.message);
+                loadQueue();
+            } catch (error) {
+                console.error('Ошибка удаления задачи:', error);
+                showNotification('Ошибка удаления задачи: ' + error.message, 'error');
+            }
+        }
+        
+        async function loadCompletedTasks() {
+            try {
+                const result = await apiCall('completed-tasks', 'GET');
+                const completedList = document.getElementById('completed-tasks-list');
+                
+                if (result.tasks.length === 0) {
+                    completedList.innerHTML = '<p>Выполненных задач нет</p>';
+                    return;
+                }
+                
+                completedList.innerHTML = result.tasks.map(task => `
+                    <div class="task-item">
+                        <h4>
+                            <span class="status-indicator status-completed"></span>
+                            Задача ${task.id}
+                        </h4>
+                        <p>Артикул: ${task.article}</p>
+                        <p>Статус: ${task.status}</p>
+                        <p>Приоритет: ${task.priority}</p>
+                        ${task.assigned_printer ? `<p>Принтер: ${task.assigned_printer}</p>` : ''}
+                        <p>Время завершения: ${task.completed_at || 'Не указано'}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки выполненных задач:', error);
+            }
+        }
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            connectWebSocket();
+            loadQueue();
+            loadCompletedTasks();
+            
+            // Обновление очереди каждые 10 секунд
+            setInterval(loadQueue, 10000);
+            
+            // Обновление выполненных задач каждые 30 секунд
+            setInterval(loadCompletedTasks, 30000);
+        });
+    </script>
+</body>
+</html> 

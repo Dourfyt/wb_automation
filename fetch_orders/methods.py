@@ -3,6 +3,7 @@ import aiohttp
 import asyncio
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+import json
 
 # Загружаем переменные окружения из .env файла
 load_dotenv()
@@ -14,9 +15,9 @@ def get_auth_headers() -> Dict[str, str]:
     Returns:
         Dict[str, str]: Словарь с заголовками авторизации
     """
-    token = os.getenv('WB_TOKEN')
+    token = os.getenv("WB_TOKEN")
     if not token:
-        raise ValueError("WB_TOKEN не найден в .env файле")
+        raise ValueError("WB_TOKEN не найден в .env файле. Пожалуйста, создайте файл .env и добавьте ваш токен Wildberries API: WB_TOKEN=your_token_here")
     
     return {
         'Authorization': token,
@@ -44,11 +45,19 @@ async def make_get_request(url: str, params: Optional[Dict[str, Any]] = None, se
     try:
         if session is None:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers, params=params) as response:
+                async with session.get(url, headers=headers) as response:
+                    print(f"Response status: {response.status}")
+                    if response.status != 200:
+                        error_text = await response.text()
+                        print(f"Error response: {error_text}")
                     response.raise_for_status()
                     return response
         else:
-            async with session.get(url, headers=headers, params=params) as response:
+            async with session.get(url, headers=headers) as response:
+                print(f"Response status: {response.status}")
+                if response.status != 200:
+                    error_text = await response.text()
+                    print(f"Error response: {error_text}")
                 response.raise_for_status()
                 return response
     except aiohttp.ClientError as e:
@@ -134,7 +143,19 @@ async def get_json_response(url: str, params: Optional[Dict[str, Any]] = None, s
         Dict[str, Any]: JSON ответ от сервера
     """
     response = await make_get_request(url, params, session)
-    return await response.json()
+    response_text = await response.text()
+    print(f"Raw response: {response_text}")
+    
+    if not response_text.strip():
+        print("Empty response received")
+        return {}
+    
+    try:
+        return await response.json()
+    except Exception as e:
+        print(f"Error parsing JSON: {e}")
+        print(f"Response text: {response_text}")
+        return {}
 
 async def post_json_data(url: str, json_data: Dict[str, Any], session: Optional[aiohttp.ClientSession] = None) -> Dict[str, Any]:
     """
